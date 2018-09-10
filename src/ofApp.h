@@ -6,10 +6,40 @@
 #include <vector>
 
 
+struct Quad {
+public:
+	Pt A, B, C, D;
+	Pt pts[4];
+	Quad (){}
+	Quad(Pt a, Pt b, Pt c, Pt d) {
+		A = a; B = b; C = c; D = d;
+		pts[0] = A; pts[1] = B;
+		pts[2] = C; pts[3] = D;
+	}
+	void setupPreservePts(Pt a, Pt b, Pt c, Pt d) {
+		A = a; B = b; C = c; D = d;
+		pts[0] = A; pts[1] = B;
+		pts[2] = C; pts[3] = D;
+	}
+	void display() {
+		ofDrawLine(A.x, A.y, B.x, B.y);
+		ofDrawLine(B.x, B.y, C.x, C.y);
+		ofDrawLine(C.x, C.y, D.x, D.y);
+		ofDrawLine(D.x, D.y, A.x, A.y);
+	}
+};
+
 struct Seg{
 public:
 	Pt A,B;
+	Seg();
 	Seg(Pt a, Pt b) { A = a; B = b; }
+};
+
+struct sortSegDesc {
+	bool operator() (Seg a, Seg b) {
+		return a.A.di(a.B) > b.A.di(b.B);
+	}
 };
 
 struct Tri {
@@ -17,9 +47,18 @@ struct Tri {
 	Tri(Pt a, Pt b, Pt c) { A = a; B = b; C = c; }
 };
 
+struct sortTriDesc {
+	bool operator() (Tri a, Tri b) {
+		float u = a.A.di(a.B) + a.A.di(a.C) + a.B.di(a.C);
+		float v = b.A.di(b.B) + b.A.di(b.C) + b.B.di(b.C);
+		return  u > v;
+	}
+};
+
 class ofApp : public ofBaseApp{
 
 	public:
+		//ofApp() {}
 		void setup();
 		void update();
 		void draw();
@@ -48,6 +87,10 @@ class ofApp : public ofBaseApp{
 		Pt initPeripheralSys(Pt, Pt, Pt, float);
 		float heron(Pt, Pt, Pt);
 		int heronContains(Pt, Pt, Pt, Pt);
+		Pt proj(Pt, Pt, Pt);
+		vector<Quad> initSubdiv(Pt, Pt, Pt, Pt, int, vector<Quad>);
+		void subdiv(Quad, int, int);
+		void intRushConfig();
 
 		/* NS VARIABLES */
 		vector<Pt> oriptvec;
@@ -66,9 +109,21 @@ class ofApp : public ofBaseApp{
 		vector<vector<Pt>>crvpts;
 		vector<Seg>intStraightSeg;
 		float L, W, Corridor, Curvature;
-
+		vector<vector<Quad>>subdivVec; 
+		vector<Quad>subdivQuadVec;
+		Pt A0, A1, A2, A3, A4, A5, A6, A7, A8;
+		Pt B0, B1, B2, B3, B4, B5, B6, B7, B8;
+		vector<Quad> quads0;
+		vector<Quad> quads1;
+		vector<Quad> quads2;
+		vector<Quad> quads3;
+		vector<Quad> quads4;
+		vector<Quad> quads5;
+		vector<Quad> quads6;
 
 		/*	gui parameters and objects	*/
+		int hut = 0; Pt globaldiaA; Pt globaldiaB;
+
 		ofParameterGroup parameters;
 		ofParameter<float>CurvaTure;
 		ofParameter<int>CurveSegP0;
@@ -82,7 +137,21 @@ class ofApp : public ofBaseApp{
 		ofParameter<float>DoorDepth;
 		ofParameter<ofColor> color0;
 		ofParameter<ofColor> color1;
+		
 		ofParameter<bool>controlpts;
+		ofParameter<bool>rush;
+		ofParameter<int>intgrid0;
+		ofParameter<int>intgrid1;
+		ofParameter<int>intgrid2;
+		
+		ofParameter<bool>fixint0;
+		ofParameter<bool>fixint1;
+		ofParameter<bool>fixint2;
+		ofParameter<bool>fixint3;
+		ofParameter<bool>fixint4;
+		ofParameter<bool>fixint5;
+		ofParameter<bool>fixint6;
+		
 		ofxPanel gui;
 
 		// camera
