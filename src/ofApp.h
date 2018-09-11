@@ -40,6 +40,7 @@ public:
 	Pt A,B;
 	Seg();
 	Seg(Pt a, Pt b) { A = a; B = b; }
+	void setup(Pt a, Pt b) { A = a; B = b; }
 };
 
 struct sortSegDesc {
@@ -112,13 +113,21 @@ class ofApp : public ofBaseApp{
 		int global_image_counter = 0;
 		vector<Tri> trivec;
 		vector<Seg>straightSeg;
-		vector<vector<Pt>>crvpts;
-		vector<Seg>intStraightSeg;
+		vector<vector<Pt>>crvpts; //used
+		vector<Seg>intStraightSeg; //used
+		vector<Pt>diagpts; //used
+
+		vector<Pt> spinectrlptvec;
+		int controlspine = 0;
+		vector<Pt> spineptvec;
+		
+
 		float L, W, Corridor, Curvature;
-		vector<vector<Quad>>subdivVec; 
+		//vector<vector<Quad>>subdivVec; 
 		vector<Quad>subdivQuadVec;
 		Pt A0, A1, A2, A3, A4, A5, A6, A7, A8;
 		Pt B0, B1, B2, B3, B4, B5, B6, B7, B8;
+		Pt A, B, pB, C, pC, D, pD, E, pE, F;
 		vector<Quad> quads0;
 		vector<Quad> quads1;
 		vector<Quad> quads2;
@@ -158,6 +167,11 @@ class ofApp : public ofBaseApp{
 		ofParameter<bool>fixint4;
 		ofParameter<bool>fixint5;
 		ofParameter<bool>fixint6;
+
+		ofParameter<float>SpineDisplacement;
+		ofParameter<float>spinecurvaTure;
+		ofParameter<bool>spinecontrolpts;
+		ofParameter<int>spinedivpts;
 		
 		ofxPanel gui;
 

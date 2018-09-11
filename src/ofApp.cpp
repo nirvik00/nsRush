@@ -129,7 +129,7 @@ void ofApp::setup(){
 	parameters.add(CurveSegP0.set("Crv Seg P-0", 4, 1, 10));
 	parameters.add(PeripheralCellDepth.set("P. Depth", 75, 5, 125));
 	parameters.add(PeripheralCellLength.set("P. Length", 25, 5, 75));
-	parameters.add(intSpineCtrl.set("I. Spine Ctrl", 0.50, -0.95, 0.95));
+	
 	parameters.add(Corridor0.set("P. Cor Depth ", 25, 1, 75));
 	parameters.add(Corridor1.set("I. Cor Depth", 10, 1, 50));
 	parameters.add(DoorDepth.set("Door Depth ", 15, 5, 25));
@@ -147,6 +147,11 @@ void ofApp::setup(){
 	parameters.add(fixint4.set("Fix-4 IC. Config", false));
 	parameters.add(fixint5.set("Fix-5 ICR. Config", false));
 	parameters.add(fixint6.set("Fix-6 ICL. Config", false));
+
+	//parameters.add(intSpineCtrl.set("I. Spine Ctrl", 0.50, -0.95, 0.95));
+	parameters.add(spinecontrolpts.set("Spine Control Pts", false));
+	parameters.add(SpineDisplacement.set("I. Spine Ctrl", 0, -200, 200));
+	parameters.add(spinedivpts.set("I. Grid-1", 1, 0, 50));
 
 	gui.setup(parameters);
 	gui.setBackgroundColor(ofColor(255,255,255));
@@ -185,8 +190,34 @@ void ofApp::update(){
 	A6 = intStraightSeg[6].A; B6 = intStraightSeg[6].B;
 	A7 = intStraightSeg[7].A; B7 = intStraightSeg[7].B;
 	A8 = intStraightSeg[8].A; B8 = intStraightSeg[8].B;
-	
 
+	diagpts.clear(); 
+	diagpts.push_back(A0); diagpts.push_back(A1); diagpts.push_back(A2); diagpts.push_back(A3); diagpts.push_back(A4); diagpts.push_back(A5);
+	diagpts.push_back(B0); diagpts.push_back(B1); diagpts.push_back(B2); diagpts.push_back(B3); diagpts.push_back(B4); diagpts.push_back(B5);
+	diagpts.push_back(A6); diagpts.push_back(A7); diagpts.push_back(A8); diagpts.push_back(B6); diagpts.push_back(B7); diagpts.push_back(B8);
+	
+	float maxD = -1000;
+	for (int i = 0; i < diagpts.size(); i++) {
+		Pt a = diagpts[i];
+		for (int j = 0; j < diagpts.size(); j++) {
+			Pt b = diagpts[j];
+			if (a.di(b) > maxD) {
+				maxD = a.di(b); globaldiaA = a; globaldiaB = b;
+			}			
+		}
+	}
+	
+	//function<bool(Seg, Seg)>sorter = sortSegDesc();
+	//sort(diagseg.begin(), diagseg.end(), sorter);
+
+	spinectrlptvec.clear();
+	for (float i = 0.f; i < 1.f; i += 0.2) {
+		Pt p(A.x + i*(F.x - A.x), A.y + i*(F.y - A.y));
+		Pt u((F.x - A.x) / A.di(F), (F.y - A.y) / A.di(F)); Pt v(-u.y, u.x);
+		Pt q(p.x + v.x * 50 * i, p.y + v.y * 50 * i);
+		spinectrlptvec.push_back(p);
+		spinectrlptvec[i].locked = 0;
+	}
 }
 
 void ofApp::draw() {
@@ -211,7 +242,6 @@ void ofApp::draw() {
 	for (int j = 1; j < revintptvec.size(); j++) { path3.lineTo(revintptvec[j].x, revintptvec[j].y); }
 	path3.draw();
 	
-	/*
 	path4.clear();
 	path4.setStrokeColor(ofColor(0, 0, 0, 155)); path4.setFillColor(ofColor(255, 255, 255));
 	path4.setStrokeWidth(sW); 
@@ -221,7 +251,8 @@ void ofApp::draw() {
 		//ofEllipse(revintgridptvec[j].x, revintgridptvec[j].y, 10, 10);
 	}
 	path4.draw();
-	*/
+	
+	
 	//plot normal segments at points on straight segments
 	ofSetColor(ofColor(0,0,0,255)); ofSetLineWidth(sW);
 	for (int i = 1; i < straightSeg.size(); i++) {
@@ -293,8 +324,7 @@ void ofApp::draw() {
 		}
 
 	}
-
-
+	
 	/*
 	//plot normal segments at curve segments
 	for (int i = 1; i < crvpts.size()-1; i++) {
@@ -380,6 +410,8 @@ void ofApp::draw() {
 	MSG += "\nPress 'r' 'R' to reset to original drawing";
 	MSG += "\nPress 'w' 'W' to regen int config";
 	MSG += "\nPress 's' 'S' to save image";	
+	MSG += "\nPress 'e' 'E' to control spine";
+	MSG += "\nPress 'f' 'F' to stop control spine";
 	ofDrawBitmapString(MSG, 20, 525);
 	string title = "PhD student: Nirvik Saha (G.I.T.) \t\tadvisor: Dennis R Shelden (G.I.T.) \t\tadvisor: John R Haymaker (P + W)";
 	ofSetColor(0, 0, 0, 255); ofDrawBitmapString(title, 100, ofGetHeight() - 30);
@@ -405,7 +437,6 @@ void ofApp::draw() {
 	ofDrawBitmapStringHighlight("B7", B7.x, B7.y);
 	*/
 	
-	
 	if (rush == 1) {
 		ofSetColor(0); ofSetLineWidth(1);
 		for (int i = 0; i < quads0.size(); i++) { quads0[i].display(); }
@@ -416,6 +447,103 @@ void ofApp::draw() {
 		for (int i = 0; i < quads5.size(); i++) { quads5[i].display(); }
 		for (int i = 0; i < quads6.size(); i++) { quads6[i].display(); }
 	}	
+
+
+
+
+	A = globaldiaA; F = globaldiaB; Pt U(F.x - A.x, F.y - A.y); Pt V(-U.y / A.di(F), U.x / A.di(F));
+	B.setup(A.x + U.x*0.25, A.y + U.y*0.20); C.setup(A.x + U.x*0.40, A.y + U.y*0.40); 
+	D.setup(A.x + U.x*0.60, A.y + U.y*0.60); E.setup(A.x + U.x*0.80, A.y + U.y*0.80);
+	
+	/*
+	spinectrlptvec.clear();
+	int k = 0;
+	for (float i = 0.f; i < 1.f; i+=0.2) {
+		Pt p(A.x + i*(F.x - A.x), A.y + i*(F.y - A.y));
+		spinectrlptvec.push_back(p);
+		ofDrawBitmapStringHighlight(to_string(k)+")", p.x, p.y);
+		k++;
+	}
+	spinectrlptvec.push_back(F);
+	*/
+	
+	// only pB
+	if (controlspine == 0) {
+		pB.setup(B.x + V.x * SpineDisplacement, B.y + V.y * SpineDisplacement); pB.locked = 0;
+		pC.setup(C.x + V.x * SpineDisplacement*2, C.y + V.y * SpineDisplacement*2); pC.locked = 0;
+		pD.setup(D.x + V.x * -SpineDisplacement*2, D.y + V.y * -SpineDisplacement*2); pD.locked = 0;
+		pE.setup(E.x + V.x * -SpineDisplacement, E.y + V.y * -SpineDisplacement); pE.locked = 0;
+	}
+	spineptvec.clear();
+	for (float t = 0.f; t < 1.f; t += 0.01) {
+		ofSetColor(0, 0, 255); ofFill();
+		float x = (A.x*pow((1 - t), 5)) + (pB.x * 5 * pow((1 - t), 4)*t) + (pC.x * 10 * pow((1 - t), 3)*pow(t, 2)) + (pD.x * 10 * pow(1 - t, 2)*pow(t, 3)) + pE.x * 5 * (1 - t)*pow(t, 4) + F.x*pow(t, 5);
+		float y = (A.y*pow((1 - t), 5)) + (pB.y * 5 * pow((1 - t), 4)*t) + (pC.y * 10 * pow((1 - t), 3)*pow(t, 2)) + (pD.y * 10 * pow(1 - t, 2)*pow(t, 3)) + pE.y * 5 * (1 - t)*pow(t, 4) + F.y*pow(t, 5);
+		spineptvec.push_back(Pt(x, y));
+	}
+	
+	//only plotting of spine vector
+	if (spinecontrolpts == true) {
+		if (pB.locked == 1) {
+			ofFill(); ofSetColor(255, 0, 0, 50);
+			ofEllipse(pB.x, pB.y, 25, 25);
+		}
+		else {
+			ofSetLineWidth(1); ofSetColor(0, 0, 0, 150);
+			ofEllipse(pB.x, pB.y, 25, 25);
+		}
+
+
+		if (pC.locked == 1) {
+			ofFill(); ofSetColor(255, 0, 0, 50);
+			ofEllipse(pC.x, pC.y, 25, 25);
+		}
+		else {
+			ofSetLineWidth(1); ofSetColor(0, 0, 0, 150);
+			ofEllipse(pC.x, pC.y, 25, 25);
+		}
+
+		if (pD.locked == 1) {
+			ofFill(); ofSetColor(255, 0, 0, 50);
+			ofEllipse(pD.x, pD.y, 25, 25);
+		}
+		else {
+			ofSetLineWidth(1); ofSetColor(0, 0, 0, 150);
+			ofEllipse(pD.x, pD.y, 25, 25);
+		}
+
+		if (pE.locked == 1) {
+			ofFill(); ofSetColor(255, 0, 0, 50);
+			ofEllipse(pE.x, pE.y, 25, 25);
+		}
+		else {
+			ofSetLineWidth(1); ofSetColor(0, 0, 0, 150);
+			ofEllipse(pE.x, pE.y, 25, 25);
+		}
+		//plot the spine
+		for (int i = 1; i < spineptvec.size(); i++) {
+			Pt a = spineptvec[i - 1]; Pt b = spineptvec[i];
+			ofDrawLine(a.x, a.y, b.x, b.y);
+		}
+	}
+	
+	for (int i = 0; i < spineptvec.size(); i++) {
+		if (i > 1 && i%spinedivpts == 0) {
+			ofSetColor(255, 0, 0, 50); ofEllipse(spineptvec[i].x, spineptvec[i].y, 15, 15);
+		}
+	}
+	/*
+	//plot the diagonal
+	ofSetLineWidth(10); ofSetColor(255, 0, 0, 150);
+	ofLine(globaldiaA.x, globaldiaA.y, globaldiaB.x, globaldiaB.y);
+	ofSetLineWidth(1); ofSetColor(0, 0, 0);
+	for (int i = 0; i < intStraightSeg.size(); i++) {
+	Pt p = globaldiaA; Pt q = intStraightSeg[i].A; Pt r = globaldiaB;
+	Pt s = proj(p, q, r);
+	ofLine(q.x, q.y, s.x, s.y);
+	}
+	*/
+	
 }
 
 void ofApp::keyPressed(int key){
@@ -430,6 +558,12 @@ void ofApp::keyPressed(int key){
 	}
 	if (key == 'w' || key == 'W') {
 		intRushConfig();
+	}
+	if (key == 'e' || key == 'E') {
+		controlspine = 1;
+	}
+	if (key == 'f' || key == 'F') {
+		controlspine = 0;
 	}
 }
 
@@ -447,13 +581,32 @@ void ofApp::mouseMoved(int x, int y ){
 			iniptvec[i].locked = 0;
 		}
 	}
+
+	//lock control spine points
+	if (Pt(x, y).di(pB) < 25) {	pB.locked = 1; }
+	else if (Pt(x, y).di(pB) > 25) { pB.locked = 0; }
+
+	if (Pt(x, y).di(pC) < 25) {	pC.locked = 1; }
+	else if (Pt(x, y).di(pC) > 25) { pC.locked = 0; }
+
+	if (Pt(x, y).di(pD) < 25) {	pD.locked = 1; }
+	else if (Pt(x, y).di(pD) > 25) { pD.locked = 0; }
+
+	if (Pt(x, y).di(pE) < 25) { pE.locked = 1; }
+	else if (Pt(x, y).di(pE) > 25) { pE.locked = 0; }
 }
 
 void ofApp::mouseDragged(int x, int y, int button){
-	for (int i = 0; i < iniptvec.size(); i++) {
+	for (int i = 0; i < iniptvec.size(); i++) { 
 		if (iniptvec[i].locked==1) { iniptvec[i].setup(x, y); }
 	}
 	intRushConfig();
+
+	//lock control spine points
+	if (pB.locked == 1) { pB.setup(x, y); }
+	if (pC.locked == 1) { pC.setup(x, y); }
+	if (pD.locked == 1) { pD.setup(x, y); }
+	if (pE.locked == 1) { pE.setup(x, y); }
 }
 
 void ofApp::mousePressed(int x, int y, int button){
