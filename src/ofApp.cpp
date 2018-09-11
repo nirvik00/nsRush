@@ -131,22 +131,22 @@ void ofApp::setup(){
 	parameters.add(PeripheralCellLength.set("P. Length", 25, 5, 75));
 	parameters.add(intSpineCtrl.set("I. Spine Ctrl", 0.50, -0.95, 0.95));
 	parameters.add(Corridor0.set("P. Cor Depth ", 25, 1, 75));
-	parameters.add(Corridor1.set("I. Cor Depth", 5, 1, 15));
+	parameters.add(Corridor1.set("I. Cor Depth", 10, 1, 50));
 	parameters.add(DoorDepth.set("Door Depth ", 15, 5, 25));
-	parameters.add(color0.set("Color P.region", 225, ofColor(0, 0), 255));
-	parameters.add(color1.set("Color I.region", 225, ofColor(0, 0), 255));
+	//parameters.add(color0.set("Color P.region", 225, ofColor(0, 0), 255));
+	//parameters.add(color1.set("Color I.region", 225, ofColor(0, 0), 255));
 	parameters.add(controlpts.set("Control Pts", false));
 	parameters.add(rush.set("Rush Config", false));
 	parameters.add(intgrid0.set("I. Grid-1", 1, 0, 10));
 	parameters.add(intgrid1.set("I. Grid-2 ", 2, 0, 10));
 	parameters.add(intgrid2.set("I. Grid-3 ", 1, 0, 10));
-	parameters.add(fixint0.set("Fix-0 I. Config", false));
-	parameters.add(fixint1.set("Fix-1 I. Config", false));
-	parameters.add(fixint2.set("Fix-2 I. Config", false));
-	parameters.add(fixint3.set("Fix-3 I. Config", false));
-	parameters.add(fixint4.set("Fix-4 I. Config", false));
-	parameters.add(fixint5.set("Fix-5 I. Config", false));
-	parameters.add(fixint6.set("Fix-6 I. Config", false));
+	parameters.add(fixint0.set("Fix-0 ILU. Config", false));
+	parameters.add(fixint1.set("Fix-1 IRU. Config", false));
+	parameters.add(fixint2.set("Fix-2 IRD. Config", false));
+	parameters.add(fixint3.set("Fix-3 ILD. Config", false));
+	parameters.add(fixint4.set("Fix-4 IC. Config", false));
+	parameters.add(fixint5.set("Fix-5 ICR. Config", false));
+	parameters.add(fixint6.set("Fix-6 ICL. Config", false));
 
 	gui.setup(parameters);
 	gui.setBackgroundColor(ofColor(255,255,255));
@@ -185,19 +185,17 @@ void ofApp::update(){
 	A6 = intStraightSeg[6].A; B6 = intStraightSeg[6].B;
 	A7 = intStraightSeg[7].A; B7 = intStraightSeg[7].B;
 	A8 = intStraightSeg[8].A; B8 = intStraightSeg[8].B;
+	
 
-	if (rush == 1) {
-		intRushConfig();
-		rush = 0;
-	}
 }
 
 void ofApp::draw() {
 	trivec.clear();
 	//plot smooth boundaries	
-	float sW = 2; ofColor colr = (ofColor(0, 0, 0, 255)); ofColor fill2(color0);//fill color from interface
+	float sW = 2; ofColor colr = (ofColor(255, 0, 0, 50)); 
+	ofColor fill2(colr);
 	path2.clear();
-	path2.setStrokeColor(colr);
+	path2.setStrokeColor(ofColor(0,0,0,255));
 	path2.setStrokeWidth(sW); path2.setFillColor(fill2);
 	path2.moveTo(revptvec[0].x, revptvec[0].y);
 	for (int i = 1; i < revptvec.size(); i++) {
@@ -207,16 +205,16 @@ void ofApp::draw() {
 	path2.draw();
 
 	path3.clear();
-	path3.setStrokeColor(colr);
-	path3.setStrokeWidth(sW); path3.setFillColor(ofColor(255, 255, 255));
+	path3.setStrokeColor(ofColor(150, 150, 0, 155));
+	path3.setStrokeWidth(sW); path3.setFillColor(ofColor(250, 250, 250));
 	path3.moveTo(revintptvec[0].x, revintptvec[0].y);
 	for (int j = 1; j < revintptvec.size(); j++) { path3.lineTo(revintptvec[j].x, revintptvec[j].y); }
 	path3.draw();
 	
 	/*
 	path4.clear();
-	path4.setStrokeColor(colr); ofColor fill4(color1);//fill color from interface
-	path4.setStrokeWidth(sW); path4.setFillColor(ofColor(fill4));
+	path4.setStrokeColor(ofColor(0, 0, 0, 155)); path4.setFillColor(ofColor(255, 255, 255));
+	path4.setStrokeWidth(sW); 
 	path4.moveTo(revintgridptvec[0].x, revintgridptvec[0].y);
 	for (int j = 1; j < revintgridptvec.size(); j++) {
 		path4.lineTo(revintgridptvec[j].x, revintgridptvec[j].y);
@@ -224,8 +222,8 @@ void ofApp::draw() {
 	}
 	path4.draw();
 	*/
-
 	//plot normal segments at points on straight segments
+	ofSetColor(ofColor(0,0,0,255)); ofSetLineWidth(sW);
 	for (int i = 1; i < straightSeg.size(); i++) {
 		Pt a = straightSeg[i - 1].B; Pt b = straightSeg[i].A;
 		int n = a.di(b) / L;
@@ -241,7 +239,7 @@ void ofApp::draw() {
 				Pt g(revptvec[k - 1].x, revptvec[k - 1].y); Pt h(revptvec[k].x, revptvec[k].y);
 				Pt I = intxPt2(e, f, g, h);
 				if (I.di(e) < W*1.5 && I.di(e) > 0.75*W && I.x > 0) {
-					ofSetColor(colr); ofSetLineWidth(sW); ofLine(e.x, e.y, I.x, I.y);
+					ofLine(e.x, e.y, I.x, I.y);
 					trivec.push_back(Tri(I, e, b));
 					break;
 				}
@@ -251,7 +249,7 @@ void ofApp::draw() {
 
 	if (showCurveSeg == 1) {
 		//plot curve points normal segment
-		vector<Seg>prevseg; ofSetColor(0); ofSetLineWidth(sW);
+		vector<Seg>prevseg; ofSetColor(ofColor(0,0,0,255)); ofSetLineWidth(sW);
 		int mod = CurveSegP0;
 		//plot point segments of curve & absorb in vector
 		for (int i = 0; i < crvpts.size(); i++) {
@@ -326,7 +324,7 @@ void ofApp::draw() {
 	*/
 
 	//plot door swings
-	float dw = DoorDepth;
+	float dw = DoorDepth; ofSetColor(ofColor(0, 0, 0, 255));
 	for (int i = 0; i < trivec.size(); i++) {
 		Pt n = trivec[i].A; Pt e = trivec[i].B; Pt f = trivec[i].C;
 		Pt u((f.x - e.x) / e.di(f), (f.y - e.y) / e.di(f));
@@ -407,15 +405,17 @@ void ofApp::draw() {
 	ofDrawBitmapStringHighlight("B7", B7.x, B7.y);
 	*/
 	
-	ofSetColor(0); ofSetLineWidth(1);
-	for (int i = 0; i < quads0.size(); i++) { quads0[i].display(); }
-	for (int i = 0; i < quads1.size(); i++) { quads1[i].display(); }
-	for (int i = 0; i < quads2.size(); i++) { quads2[i].display(); }
-	for (int i = 0; i < quads3.size(); i++) { quads3[i].display(); }
-	for (int i = 0; i < quads4.size(); i++) { quads4[i].display(); }
-	for (int i = 0; i < quads5.size(); i++) { quads5[i].display(); }
-	for (int i = 0; i < quads6.size(); i++) { quads6[i].display(); }
 	
+	if (rush == 1) {
+		ofSetColor(0); ofSetLineWidth(1);
+		for (int i = 0; i < quads0.size(); i++) { quads0[i].display(); }
+		for (int i = 0; i < quads1.size(); i++) { quads1[i].display(); }
+		for (int i = 0; i < quads2.size(); i++) { quads2[i].display(); }
+		for (int i = 0; i < quads3.size(); i++) { quads3[i].display(); }
+		for (int i = 0; i < quads4.size(); i++) { quads4[i].display(); }
+		for (int i = 0; i < quads5.size(); i++) { quads5[i].display(); }
+		for (int i = 0; i < quads6.size(); i++) { quads6[i].display(); }
+	}	
 }
 
 void ofApp::keyPressed(int key){
@@ -650,18 +650,41 @@ void ofApp::intRushConfig() {
 		float y = (a.y*pow((1 - t), 2)) + (w.y * 2 * (1 - t)*t) + c.y*pow(t, 2);
 		midptvec.push_back(Pt(x, y));
 	}
-	for (int j = 0; j < midptvec.size() - 1; j++) {
-		Pt e = midptvec[j]; Pt f = midptvec[j + 1];
-	}
+
+	for (int j = 0; j < midptvec.size() - 1; j++) {	Pt e = midptvec[j]; Pt f = midptvec[j + 1]; }
+
+	Pt b7(B7.x + (A0.x - B7.x)*Corridor1 / (B7.di(A0)), B7.y + (A0.y - B7.y)*Corridor1 / (B7.di(A0)));
+	Pt a1(A1.x + (B0.x - A1.x)*Corridor1 / (B0.di(A1)), A1.y + (B0.y - A1.y)*Corridor1 / (B0.di(A1)));
+	Pt b1(B1.x + (A2.x - B1.x)*Corridor1 / (A2.di(B1)), B1.y + (A2.y - B1.y)*Corridor1 / (A2.di(B1)));
+	Pt a3(A3.x + (B2.x - A3.x)*Corridor1 / (B2.di(A3)), A3.y + (B2.y - A3.y)*Corridor1 / (B2.di(A3)));
+	Pt a5(A5.x + (B4.x - A5.x)*Corridor1 / (B4.di(A5)), A5.y + (B4.y - A5.y)*Corridor1 / (B4.di(A5)));
+	Pt b3(B3.x + (A4.x - B3.x)*Corridor1 / (A4.di(B3)), B3.y + (A4.y - B3.y)*Corridor1 / (A4.di(B3)));
+	Pt a7(A7.x + (B6.x - A7.x)*Corridor1 / (B6.di(A7)), A7.y + (B6.y - A7.y)*Corridor1 / (B6.di(A7)));
+	Pt b5(B5.x + (A6.x - B5.x)*Corridor1 / (A6.di(B5)), B5.y + (A6.y - B5.y)*Corridor1 / (A6.di(B5)));
 
 	vector<Quad> quad;
-	if (fixint0 == 0) {	quads0.clear();	quads0 = initSubdiv(A0, B0, A1, B7, intgrid0, quads0); }
-	if (fixint1 == 0) {	quads1.clear();	quads1 = initSubdiv(A2, B2, A3, B1, intgrid0, quads1); }
-	if (fixint2 == 0) {	quads2.clear();	quads2 = initSubdiv(B3, A4, B4, A5, intgrid0, quads2); }
-	if (fixint3 == 0) {	quads3.clear();	quads3 = initSubdiv(B5, A6, B6, A7, intgrid0, quads3); }
-	if (fixint4 == 0) {	quads4.clear();	quads4 = initSubdiv(A1, B1, A5, B5, intgrid1, quads4); }
-	if (fixint5 == 0) {	quads5.clear();	quads5 = initSubdiv(B1, A3, B3, A5, intgrid2, quads5); }
-	if (fixint6 == 0) {	quads6.clear();	quads6 = initSubdiv(B7, A1, B5, A7, intgrid2, quads6); }
-	rush = 0;
-	rush.set(false);
+	if (fixint0 == 0 && (B7.di(A0))>50) {	quads0.clear();	quads0 = initSubdiv(A0, B0, a1, b7, intgrid0, quads0); } // inter
+	if (fixint1 == 0 && (B0.di(A1))>50) {	quads1.clear();	quads1 = initSubdiv(A2, B2, a3, b1, intgrid0, quads1); } // inter
+	if (fixint2 == 0 && (A2.di(B1))>50) {	quads2.clear();	quads2 = initSubdiv(b3, A4, B4, a5, intgrid0, quads2); } // inter
+	if (fixint3 == 0 && (B2.di(A3))>50) {	quads3.clear();	quads3 = initSubdiv(b5, A6, B6, a7, intgrid0, quads3); } // inter
+	
+	if (fixint4 == 0) { quads4.clear();	quads4 = initSubdiv(A1, B1, A5, B5, intgrid1, quads4); } // center part
+
+	/*
+	Pt a1_ = proj(B7, A1, A3); Pt b5_ = proj(A7, B5, B3); // adjust for left -center
+	Pt b1_ = proj(B7, B1, A3); Pt a5_ = proj(A7, A5, B3); // right for right -center
+	if (fixint6 == 0) { quads6.clear();	quads6 = initSubdiv(B7, a1_, b5_, A7, intgrid2, quads6); } // left center
+	if (fixint5 == 0) {	quads5.clear();	quads5 = initSubdiv(b1_, A3, B3, a5_, intgrid2, quads5); } // right center
+	*/
+
+	if (fixint6 == 0) { quads6.clear();	quads6 = initSubdiv(B7, A1, B5, A7, intgrid2, quads6); } // left center
+	if (fixint5 == 0) { quads5.clear();	quads5 = initSubdiv(B1, A3, B3, A5, intgrid2, quads5); } // right center
+
+	if (B7.di(A0) < 50) { quads0.clear(); }
+	if (B0.di(A1) < 50) { quads1.clear(); }
+	if (A2.di(B1) < 50) { quads2.clear(); }
+	if (B2.di(A3) < 50) { quads3.clear(); }
+
+	//rush = 0;
+	//rush.set(false);
 }

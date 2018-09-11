@@ -22,10 +22,16 @@ public:
 		pts[2] = C; pts[3] = D;
 	}
 	void display() {
-		ofDrawLine(A.x, A.y, B.x, B.y);
-		ofDrawLine(B.x, B.y, C.x, C.y);
-		ofDrawLine(C.x, C.y, D.x, D.y);
-		ofDrawLine(D.x, D.y, A.x, A.y);
+		ofPath path;
+		path.setFillColor(ofColor(0, 150, 155, 50));
+		path.setStrokeWidth(2);
+		path.setStrokeColor(ofColor(0, 0, 0, 255));
+		path.moveTo(A.x, A.y);
+		path.lineTo(B.x, B.y);
+		path.lineTo(C.x, C.y);
+		path.lineTo(D.x, D.y);
+		path.close();
+		path.draw();
 	}
 };
 
@@ -122,7 +128,8 @@ class ofApp : public ofBaseApp{
 		vector<Quad> quads6;
 
 		/*	gui parameters and objects	*/
-		int hut = 0; Pt globaldiaA; Pt globaldiaB;
+		//int rush = 0; 
+		Pt globaldiaA; Pt globaldiaB;
 
 		ofParameterGroup parameters;
 		ofParameter<float>CurvaTure;
