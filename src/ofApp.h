@@ -90,6 +90,7 @@ class ofApp : public ofBaseApp{
 		vector<Pt> Lerp(Pt, Pt, Pt);
 		Pt intxPt(Pt, Pt, Pt, Pt);
 		Pt intxPt2(Pt, Pt, Pt, Pt);
+		Pt intxPt4(Pt, Pt, Pt, Pt);
 		int doesintx(Pt, Pt, Pt, Pt);
 		Pt initPeripheralSys(Pt, Pt, Pt, float);
 		float heron(Pt, Pt, Pt);
@@ -98,6 +99,7 @@ class ofApp : public ofBaseApp{
 		vector<Quad> initSubdiv(Pt, Pt, Pt, Pt, int, vector<Quad>);
 		void subdiv(Quad, int, int);
 		void intRushConfig();
+		vector<Pt> gensmoothspinecurve();
 
 		/* NS VARIABLES */
 		vector<Pt> oriptvec;
@@ -117,7 +119,6 @@ class ofApp : public ofBaseApp{
 		vector<Seg>intStraightSeg; //used
 		vector<Pt>diagpts; //used
 
-		vector<Pt> spinectrlptvec;
 		int controlspine = 0;
 		vector<Pt> spineptvec;
 		
@@ -127,7 +128,7 @@ class ofApp : public ofBaseApp{
 		vector<Quad>subdivQuadVec;
 		Pt A0, A1, A2, A3, A4, A5, A6, A7, A8;
 		Pt B0, B1, B2, B3, B4, B5, B6, B7, B8;
-		Pt A, B, pB, C, pC, D, pD, E, pE, F;
+		Pt A, B, pB, C, pC, D, pD, E, pE, F, pF;
 		vector<Quad> quads0;
 		vector<Quad> quads1;
 		vector<Quad> quads2;
@@ -148,8 +149,8 @@ class ofApp : public ofBaseApp{
 		ofParameter<int>PeripheralCellLength;
 		ofParameter<int>Corridor0;
 
-		ofParameter<float>intSpineCtrl;
-		ofParameter<int>Corridor1;
+		
+		
 		ofParameter<float>DoorDepth;
 		ofParameter<ofColor> color0;
 		ofParameter<ofColor> color1;
@@ -168,11 +169,14 @@ class ofApp : public ofBaseApp{
 		ofParameter<bool>fixint5;
 		ofParameter<bool>fixint6;
 
-		ofParameter<float>SpineDisplacement;
-		ofParameter<float>spinecurvaTure;
 		ofParameter<bool>spinecontrolpts;
+		ofParameter<int>Corridor1;
+		ofParameter<float>intSpineCtrl;
+		ofParameter<float>SpineDisplacement;
+		ofParameter<float>spinecurvature;		
 		ofParameter<int>spinedivpts;
-		
+		ofParameter<bool>showintspinequads;
+		ofParameter<bool>showintregion;
 		ofxPanel gui;
 
 		// camera

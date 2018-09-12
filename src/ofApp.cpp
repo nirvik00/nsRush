@@ -76,6 +76,29 @@ vector<Pt> ofApp::gensmoothboundary(vector<Pt>ptvec) {
 	return newptvec;
 }
 
+vector<Pt> ofApp::gensmoothspinecurve() {
+	vector<Pt> newptvec; newptvec.clear();
+	A = globaldiaA; F = globaldiaB; Pt U(F.x - A.x, F.y - A.y); Pt V(-U.y / A.di(F), U.x / A.di(F));
+	B.setup(A.x + U.x*0.25, A.y + U.y*0.20); C.setup(A.x + U.x*0.40, A.y + U.y*0.40);
+	D.setup(A.x + U.x*0.60, A.y + U.y*0.60); E.setup(A.x + U.x*0.80, A.y + U.y*0.80);
+
+	if (controlspine == 0) {
+		pB.setup(B.x + V.x * SpineDisplacement, B.y + V.y * SpineDisplacement); pB.locked = 0;
+		pC.setup(C.x + V.x * SpineDisplacement * 2, C.y + V.y * SpineDisplacement * 2); pC.locked = 0;
+		pD.setup(D.x + V.x * -SpineDisplacement * 2, D.y + V.y * -SpineDisplacement * 2); pD.locked = 0;
+		pE.setup(E.x + V.x * -SpineDisplacement, E.y + V.y * -SpineDisplacement); pE.locked = 0;
+	}
+	spineptvec.clear();
+	for (float t = 0.f; t < 1.f; t += 0.1) {
+		ofSetColor(0, 0, 255); ofFill();
+		float x = (A.x*pow((1 - t), 5)) + (pB.x * 5 * pow((1 - t), 4)*t) + (pC.x * 10 * pow((1 - t), 3)*pow(t, 2)) + (pD.x * 10 * pow(1 - t, 2)*pow(t, 3)) + pE.x * 5 * (1 - t)*pow(t, 4) + F.x*pow(t, 5);
+		float y = (A.y*pow((1 - t), 5)) + (pB.y * 5 * pow((1 - t), 4)*t) + (pC.y * 10 * pow((1 - t), 3)*pow(t, 2)) + (pD.y * 10 * pow(1 - t, 2)*pow(t, 3)) + pE.y * 5 * (1 - t)*pow(t, 4) + F.y*pow(t, 5);
+		spineptvec.push_back(Pt(x, y));
+	}
+	return spineptvec;
+
+}
+
 vector<Pt> ofApp::geninternalboundary(vector<Pt> ptvec, float g) {
 	vector<Pt>newptvec; newptvec.clear();
 	for (int i = 0; i < ptvec.size() - 1; i++) {
@@ -131,7 +154,7 @@ void ofApp::setup(){
 	parameters.add(PeripheralCellLength.set("P. Length", 25, 5, 75));
 	
 	parameters.add(Corridor0.set("P. Cor Depth ", 25, 1, 75));
-	parameters.add(Corridor1.set("I. Cor Depth", 10, 1, 50));
+
 	parameters.add(DoorDepth.set("Door Depth ", 15, 5, 25));
 	//parameters.add(color0.set("Color P.region", 225, ofColor(0, 0), 255));
 	//parameters.add(color1.set("Color I.region", 225, ofColor(0, 0), 255));
@@ -150,8 +173,12 @@ void ofApp::setup(){
 
 	//parameters.add(intSpineCtrl.set("I. Spine Ctrl", 0.50, -0.95, 0.95));
 	parameters.add(spinecontrolpts.set("Spine Control Pts", false));
+	parameters.add(spinecurvature.set("Spine Curvature", 0.01, 0.005, 0.99f));
+	parameters.add(Corridor1.set("I. Cor Depth", 10, 1, 50));
 	parameters.add(SpineDisplacement.set("I. Spine Ctrl", 0, -200, 200));
-	parameters.add(spinedivpts.set("I. Grid-1", 1, 0, 50));
+	parameters.add(spinedivpts.set("I. Grid-1", 15, 1, 50));
+	parameters.add(showintspinequads.set("Show I Grids", false));
+	parameters.add(showintregion.set("Show I region", false));
 
 	gui.setup(parameters);
 	gui.setBackgroundColor(ofColor(255,255,255));
@@ -210,13 +237,24 @@ void ofApp::update(){
 	//function<bool(Seg, Seg)>sorter = sortSegDesc();
 	//sort(diagseg.begin(), diagseg.end(), sorter);
 
-	spinectrlptvec.clear();
-	for (float i = 0.f; i < 1.f; i += 0.2) {
-		Pt p(A.x + i*(F.x - A.x), A.y + i*(F.y - A.y));
-		Pt u((F.x - A.x) / A.di(F), (F.y - A.y) / A.di(F)); Pt v(-u.y, u.x);
-		Pt q(p.x + v.x * 50 * i, p.y + v.y * 50 * i);
-		spinectrlptvec.push_back(p);
-		spinectrlptvec[i].locked = 0;
+	//spine 
+	A = globaldiaA; F = globaldiaB; Pt U(F.x - A.x, F.y - A.y); Pt V(-U.y / A.di(F), U.x / A.di(F));
+	B.setup(A.x + U.x*0.25, A.y + U.y*0.20); C.setup(A.x + U.x*0.40, A.y + U.y*0.40);
+	D.setup(A.x + U.x*0.60, A.y + U.y*0.60); E.setup(A.x + U.x*0.80, A.y + U.y*0.80);
+
+	if (controlspine == 0) {
+		pB.setup(B.x + V.x * SpineDisplacement, B.y + V.y * SpineDisplacement); pB.locked = 0;
+		pC.setup(C.x + V.x * SpineDisplacement * 2, C.y + V.y * SpineDisplacement * 2); pC.locked = 0;
+		pD.setup(D.x + V.x * -SpineDisplacement * 2, D.y + V.y * -SpineDisplacement * 2); pD.locked = 0;
+		pE.setup(E.x + V.x * -SpineDisplacement, E.y + V.y * -SpineDisplacement); pE.locked = 0;
+	}
+	spineptvec.clear();
+	spineptvec.push_back(A);
+	for (float t = 0.f; t < 1.f; t += spinecurvature) {
+		ofSetColor(0, 0, 255); ofFill();
+		float x = (A.x*pow((1 - t), 5)) + (pB.x * 5 * pow((1 - t), 4)*t) + (pC.x * 10 * pow((1 - t), 3)*pow(t, 2)) + (pD.x * 10 * pow(1 - t, 2)*pow(t, 3)) + pE.x * 5 * (1 - t)*pow(t, 4) + F.x*pow(t, 5);
+		float y = (A.y*pow((1 - t), 5)) + (pB.y * 5 * pow((1 - t), 4)*t) + (pC.y * 10 * pow((1 - t), 3)*pow(t, 2)) + (pD.y * 10 * pow(1 - t, 2)*pow(t, 3)) + pE.y * 5 * (1 - t)*pow(t, 4) + F.y*pow(t, 5);
+		spineptvec.push_back(Pt(x, y));
 	}
 }
 
@@ -241,16 +279,7 @@ void ofApp::draw() {
 	path3.moveTo(revintptvec[0].x, revintptvec[0].y);
 	for (int j = 1; j < revintptvec.size(); j++) { path3.lineTo(revintptvec[j].x, revintptvec[j].y); }
 	path3.draw();
-	
-	path4.clear();
-	path4.setStrokeColor(ofColor(0, 0, 0, 155)); path4.setFillColor(ofColor(255, 255, 255));
-	path4.setStrokeWidth(sW); 
-	path4.moveTo(revintgridptvec[0].x, revintgridptvec[0].y);
-	for (int j = 1; j < revintgridptvec.size(); j++) {
-		path4.lineTo(revintgridptvec[j].x, revintgridptvec[j].y);
-		//ofEllipse(revintgridptvec[j].x, revintgridptvec[j].y, 10, 10);
-	}
-	path4.draw();
+
 	
 	
 	//plot normal segments at points on straight segments
@@ -403,7 +432,7 @@ void ofApp::draw() {
 		}
 	}
 
-	ofFill(); ofSetColor(ofColor(0, 0, 0, 50)); ofDrawRectangle(15, 500, 350, 100);
+	ofFill(); ofSetColor(ofColor(0, 0, 0, 50)); ofDrawRectangle(15, 560, 350, 120);
 	ofSetColor(0, 0, 0);
 	string MSG = "Keyboard controls:";
 	MSG += "\n------------------";
@@ -412,7 +441,7 @@ void ofApp::draw() {
 	MSG += "\nPress 's' 'S' to save image";	
 	MSG += "\nPress 'e' 'E' to control spine";
 	MSG += "\nPress 'f' 'F' to stop control spine";
-	ofDrawBitmapString(MSG, 20, 525);
+	ofDrawBitmapString(MSG, 20, 580);
 	string title = "PhD student: Nirvik Saha (G.I.T.) \t\tadvisor: Dennis R Shelden (G.I.T.) \t\tadvisor: John R Haymaker (P + W)";
 	ofSetColor(0, 0, 0, 255); ofDrawBitmapString(title, 100, ofGetHeight() - 30);
 	gui.draw();
@@ -448,77 +477,51 @@ void ofApp::draw() {
 		for (int i = 0; i < quads6.size(); i++) { quads6[i].display(); }
 	}	
 
-
-
-
-	A = globaldiaA; F = globaldiaB; Pt U(F.x - A.x, F.y - A.y); Pt V(-U.y / A.di(F), U.x / A.di(F));
-	B.setup(A.x + U.x*0.25, A.y + U.y*0.20); C.setup(A.x + U.x*0.40, A.y + U.y*0.40); 
-	D.setup(A.x + U.x*0.60, A.y + U.y*0.60); E.setup(A.x + U.x*0.80, A.y + U.y*0.80);
-	
-	/*
-	spinectrlptvec.clear();
-	int k = 0;
-	for (float i = 0.f; i < 1.f; i+=0.2) {
-		Pt p(A.x + i*(F.x - A.x), A.y + i*(F.y - A.y));
-		spinectrlptvec.push_back(p);
-		ofDrawBitmapStringHighlight(to_string(k)+")", p.x, p.y);
-		k++;
-	}
-	spinectrlptvec.push_back(F);
-	*/
-	
-	// only pB
-	if (controlspine == 0) {
-		pB.setup(B.x + V.x * SpineDisplacement, B.y + V.y * SpineDisplacement); pB.locked = 0;
-		pC.setup(C.x + V.x * SpineDisplacement*2, C.y + V.y * SpineDisplacement*2); pC.locked = 0;
-		pD.setup(D.x + V.x * -SpineDisplacement*2, D.y + V.y * -SpineDisplacement*2); pD.locked = 0;
-		pE.setup(E.x + V.x * -SpineDisplacement, E.y + V.y * -SpineDisplacement); pE.locked = 0;
-	}
-	spineptvec.clear();
-	for (float t = 0.f; t < 1.f; t += 0.01) {
-		ofSetColor(0, 0, 255); ofFill();
-		float x = (A.x*pow((1 - t), 5)) + (pB.x * 5 * pow((1 - t), 4)*t) + (pC.x * 10 * pow((1 - t), 3)*pow(t, 2)) + (pD.x * 10 * pow(1 - t, 2)*pow(t, 3)) + pE.x * 5 * (1 - t)*pow(t, 4) + F.x*pow(t, 5);
-		float y = (A.y*pow((1 - t), 5)) + (pB.y * 5 * pow((1 - t), 4)*t) + (pC.y * 10 * pow((1 - t), 3)*pow(t, 2)) + (pD.y * 10 * pow(1 - t, 2)*pow(t, 3)) + pE.y * 5 * (1 - t)*pow(t, 4) + F.y*pow(t, 5);
-		spineptvec.push_back(Pt(x, y));
-	}
-	
 	//only plotting of spine vector
 	if (spinecontrolpts == true) {
 		if (pB.locked == 1) {
 			ofFill(); ofSetColor(255, 0, 0, 50);
 			ofEllipse(pB.x, pB.y, 25, 25);
+			ofSetLineWidth(1); ofSetColor(0, 0, 0, 150); ofDrawLine(pB.x, pB.y, B.x, B.y);
 		}
 		else {
 			ofSetLineWidth(1); ofSetColor(0, 0, 0, 150);
 			ofEllipse(pB.x, pB.y, 25, 25);
+			ofSetLineWidth(1); ofSetColor(0, 0, 0, 150); ofDrawLine(pB.x, pB.y, B.x, B.y);
 		}
 
 
 		if (pC.locked == 1) {
 			ofFill(); ofSetColor(255, 0, 0, 50);
 			ofEllipse(pC.x, pC.y, 25, 25);
+			ofSetLineWidth(1); ofSetColor(0, 0, 0, 150); ofDrawLine(pC.x, pC.y, C.x, C.y);
 		}
 		else {
 			ofSetLineWidth(1); ofSetColor(0, 0, 0, 150);
 			ofEllipse(pC.x, pC.y, 25, 25);
+			ofSetLineWidth(1); ofSetColor(0, 0, 0, 150); ofDrawLine(pC.x, pC.y, C.x, C.y);
 		}
 
 		if (pD.locked == 1) {
 			ofFill(); ofSetColor(255, 0, 0, 50);
 			ofEllipse(pD.x, pD.y, 25, 25);
+			ofSetLineWidth(1); ofSetColor(0, 0, 0, 150); ofDrawLine(pD.x, pD.y, D.x, D.y);
 		}
 		else {
 			ofSetLineWidth(1); ofSetColor(0, 0, 0, 150);
 			ofEllipse(pD.x, pD.y, 25, 25);
+			ofSetLineWidth(1); ofSetColor(0, 0, 0, 150); ofDrawLine(pD.x, pD.y, D.x, D.y);
 		}
 
 		if (pE.locked == 1) {
 			ofFill(); ofSetColor(255, 0, 0, 50);
 			ofEllipse(pE.x, pE.y, 25, 25);
+			ofSetLineWidth(1); ofSetColor(255, 0, 0, 150); ofDrawLine(pE.x, pE.y, E.x, E.y);
 		}
 		else {
 			ofSetLineWidth(1); ofSetColor(0, 0, 0, 150);
 			ofEllipse(pE.x, pE.y, 25, 25);
+			ofSetLineWidth(1); ofSetColor(255, 0, 0, 150); ofDrawLine(pE.x, pE.y, E.x, E.y);
 		}
 		//plot the spine
 		for (int i = 1; i < spineptvec.size(); i++) {
@@ -527,28 +530,80 @@ void ofApp::draw() {
 		}
 	}
 	
+	vector<Pt> spinept;
 	for (int i = 0; i < spineptvec.size(); i++) {
-		if (i > 1 && i%spinedivpts == 0) {
-			ofSetColor(255, 0, 0, 50); ofEllipse(spineptvec[i].x, spineptvec[i].y, 15, 15);
+		if (i > 1 && i%spinedivpts == 0) { 
+			spinept.push_back(spineptvec[i]); }
+	} 
+	spinept.push_back(spineptvec[spineptvec.size()-1]);
+
+
+	if (showintregion == true) {
+		path4.clear();
+		path4.setStrokeColor(ofColor(0, 0, 0, 155)); path4.setFillColor(ofColor(255, 255, 255));
+		path4.setStrokeWidth(sW);
+		path4.moveTo(revintgridptvec[0].x, revintgridptvec[0].y);
+		for (int j = 1; j < revintgridptvec.size(); j++) {
+			path4.lineTo(revintgridptvec[j].x, revintgridptvec[j].y);
+		}
+		path4.draw();
+
+		//show the spine line
+		for (int i = 1; i < spineptvec.size(); i++) {
+			Pt a = spineptvec[i - 1]; Pt b = spineptvec[i];
+			ofSetColor(0, 0, 0, 50); ofSetLineWidth(1); ofDrawLine(a.x, a.y, b.x, b.y);
 		}
 	}
-	/*
-	//plot the diagonal
-	ofSetLineWidth(10); ofSetColor(255, 0, 0, 150);
-	ofLine(globaldiaA.x, globaldiaA.y, globaldiaB.x, globaldiaB.y);
-	ofSetLineWidth(1); ofSetColor(0, 0, 0);
-	for (int i = 0; i < intStraightSeg.size(); i++) {
-	Pt p = globaldiaA; Pt q = intStraightSeg[i].A; Pt r = globaldiaB;
-	Pt s = proj(p, q, r);
-	ofLine(q.x, q.y, s.x, s.y);
-	}
-	*/
 	
+	//spine top 
+	vector<Seg> spineupvec; vector<Seg> spinednvec;
+	for (int i = 1; i < spinept.size(); i++) {
+		Pt a = spinept[i - 1]; Pt b = spinept[i]; 
+		Pt u((b.x - a.x)*Corridor1/a.di(b), (b.y - a.y)*Corridor1 / a.di(b));	
+		Pt aup(a.x + u.y, a.y - u.x); Pt adn(a.x - u.y, a.y + u.x); 
+		if (showintregion == true) {
+			ofEllipse(aup.x, aup.y, 15, 15); ofEllipse(adn.x, adn.y, 15, 15);
+		}
+		
+		Pt u_((b.x - a.x) * 200 / a.di(b), (b.y - a.y) * 200 / a.di(b));
+		Pt a_(aup.x + u_.y*100, aup.y - u_.x*100); 
+		for (int j = 1; j < revintgridptvec.size(); j++) {
+			Pt r = revintgridptvec[j - 1]; Pt s = revintgridptvec[j];
+			Pt I = intxPt4(a, a_, r, s);
+			if (I.x > 0 && I.y > 0) {
+				spineupvec.push_back(Seg(aup, I));
+				break;
+			}
+		}
+		Pt b_(adn.x - u_.y * 100, adn.y + u_.x * 100);
+		for (int j = 1; j < revintgridptvec.size(); j++) {
+			Pt r = revintgridptvec[j - 1]; Pt s = revintgridptvec[j];
+			Pt I = intxPt4(a, b_, r, s);
+			if (I.x > 0 && I.y > 0) {
+				spinednvec.push_back(Seg(adn, I));
+				break;
+			}
+		}
+	}
+
+	if (showintspinequads == true) {
+		for (int i = 1; i < spineupvec.size(); i++) {
+			Pt A = spineupvec[i - 1].A; Pt B = spineupvec[i - 1].B;
+			Pt C = spineupvec[i].A; Pt D = spineupvec[i].B;
+			Quad q(A, B, D, C); q.display();
+		}
+		for (int i = 1; i < spinednvec.size(); i++) {
+			Pt A = spinednvec[i - 1].A; Pt B = spinednvec[i - 1].B;
+			Pt C = spinednvec[i].A; Pt D = spinednvec[i].B;
+			Quad q(A, B, D, C); q.display();
+		}
+	}	
 }
 
 void ofApp::keyPressed(int key){
 	if (key == 'r' || key == 'R') {
 		iniptvec = oriptvec;
+
 	}
 	if (key == 's' || key == 'S') {
 		global_image_counter++;
@@ -564,6 +619,7 @@ void ofApp::keyPressed(int key){
 	}
 	if (key == 'f' || key == 'F') {
 		controlspine = 0;
+		SpineDisplacement = 0; SpineDisplacement.set(0);
 	}
 }
 
@@ -662,6 +718,18 @@ Pt ofApp::intxPt2(Pt p, Pt q, Pt r, Pt s) {
 	float mx = (c1*b2 - c2*b1) / det; float my = (c2*a1 - c1*a2) / det;
 	Pt I(mx, my);
 	if (abs(I.di(r) + I.di(s) - r.di(s)) < 1) { return Pt(mx, my); }
+	else { return Pt(-100, 100); }
+}
+
+Pt ofApp::intxPt4(Pt p, Pt q, Pt r, Pt s) {
+	float a1 = q.y - p.y; float b1 = p.x - q.x;	float c1 = a1*q.x + b1*q.y;
+	float a2 = s.y - r.y; float b2 = r.x - s.x; float c2 = a2*s.x + b2*s.y;
+	float det = a1*b2 - a2*b1; if (det == 0) { return Pt(-100, -100); }
+	float mx = (c1*b2 - c2*b1) / det; float my = (c2*a1 - c1*a2) / det;
+	Pt I(mx, my);
+	if ((abs(I.di(r) + I.di(s) - r.di(s)) < 1) && (abs(I.di(p) + I.di(q) - p.di(q)) < 1)) {
+		return Pt(mx, my); 
+	}
 	else { return Pt(-100, 100); }
 }
 
