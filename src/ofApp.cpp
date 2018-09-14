@@ -49,6 +49,26 @@ vector<vector<Pt>> ofApp::getcrvpts(vector<Pt>ptvec) {
 	return nestptvec;
 }
 
+vector<Pt>ofApp::Lerp(Pt a, Pt b, Pt c) {
+	Pt ab[20]; Pt bc[20]; vector<Pt> pts;
+	int k = 0;
+	float n = 1.f / 20.f;
+	for (float i = 0.f; i < 1.f; i += n) {
+		ab[k].setup(a.x + (b.x - a.x)*i, a.y + (b.y - a.y)*i);
+		bc[k].setup(b.x + (c.x - b.x)*i, b.y + (c.y - b.y)*i);
+		k++;
+	}
+	k = 0;
+	for (float i = 0.f; i < 1.f; i += n) {
+		float x = ab[k].x + (bc[k].x - ab[k].x)*i;
+		float y = ab[k].y + (bc[k].y - ab[k].y)*i;
+		Pt e(x, y);
+		pts.push_back(e);
+		k++;
+	}
+	return pts;
+}
+
 vector<Pt> ofApp::gensmoothboundary(vector<Pt>ptvec) {
 	vector<Pt> newptvec; newptvec.clear();
 	for (int i = 0; i < ptvec.size() - 1; i++) {
@@ -64,7 +84,7 @@ vector<Pt> ofApp::gensmoothboundary(vector<Pt>ptvec) {
 			A.setup(a.x + (b.x - a.x)*Curvature, a.y + (b.y - a.y)*Curvature);
 			C.setup(c.x + (b.x - c.x)*Curvature, c.y + (b.y - c.y)*Curvature);
 			B = b;
-		}		
+		}
 		//bezier
 		newptvec.push_back(A); vector<Pt> pts = Lerp(A, B, C);
 		for (int j = 1; j < pts.size(); j++) {
@@ -74,6 +94,11 @@ vector<Pt> ofApp::gensmoothboundary(vector<Pt>ptvec) {
 	}
 	newptvec.push_back(newptvec[0]);
 	return newptvec;
+}
+
+vector<Pt> ofApp::gensmoothboundary(Pt a, Pt b, Pt c, Pt d) {
+	vector<Pt> abc = Lerp(a, b, c);
+	return abc;
 }
 
 vector<Pt> ofApp::gensmoothspinecurve() {
@@ -89,11 +114,13 @@ vector<Pt> ofApp::gensmoothspinecurve() {
 		pE.setup(E.x + V.x * -SpineDisplacement, E.y + V.y * -SpineDisplacement); pE.locked = 0;
 	}
 	spineptvec.clear();
-	for (float t = 0.f; t < 1.f; t += 0.1) {
-		ofSetColor(0, 0, 255); ofFill();
-		float x = (A.x*pow((1 - t), 5)) + (pB.x * 5 * pow((1 - t), 4)*t) + (pC.x * 10 * pow((1 - t), 3)*pow(t, 2)) + (pD.x * 10 * pow(1 - t, 2)*pow(t, 3)) + pE.x * 5 * (1 - t)*pow(t, 4) + F.x*pow(t, 5);
-		float y = (A.y*pow((1 - t), 5)) + (pB.y * 5 * pow((1 - t), 4)*t) + (pC.y * 10 * pow((1 - t), 3)*pow(t, 2)) + (pD.y * 10 * pow(1 - t, 2)*pow(t, 3)) + pE.y * 5 * (1 - t)*pow(t, 4) + F.y*pow(t, 5);
-		spineptvec.push_back(Pt(x, y));
+	for (float t = 0.f; t < 1.f; t += 0.01) {
+		if (t > 0.f) {
+			ofSetColor(0, 0, 255); ofFill();
+			float x = (A.x*pow((1 - t), 5)) + (pB.x * 5 * pow((1 - t), 4)*t) + (pC.x * 10 * pow((1 - t), 3)*pow(t, 2)) + (pD.x * 10 * pow(1 - t, 2)*pow(t, 3)) + pE.x * 5 * (1 - t)*pow(t, 4) + F.x*pow(t, 5);
+			float y = (A.y*pow((1 - t), 5)) + (pB.y * 5 * pow((1 - t), 4)*t) + (pC.y * 10 * pow((1 - t), 3)*pow(t, 2)) + (pD.y * 10 * pow(1 - t, 2)*pow(t, 3)) + pE.y * 5 * (1 - t)*pow(t, 4) + F.y*pow(t, 5);
+			spineptvec.push_back(Pt(x, y));
+		}		
 	}
 	return spineptvec;
 
@@ -125,28 +152,10 @@ vector<Pt> ofApp::geninternalboundary(vector<Pt> ptvec, float g) {
 	return newptvec;
 }
 
-vector<Pt>ofApp::Lerp(Pt a, Pt b, Pt c) {
-	Pt ab[20]; Pt bc[20]; vector<Pt> pts;
-	int k = 0;
-	float n = 1.f / 20.f;
-	for (float i = 0.f; i < 1.f; i+=n) {
-		ab[k].setup(a.x + (b.x - a.x)*i, a.y + (b.y - a.y)*i);
-		bc[k].setup(b.x + (c.x - b.x)*i, b.y + (c.y - b.y)*i);
-		k++;
-	}
-	k = 0;
-	for (float i = 0.f; i < 1.f; i+=n) {
-		float x = ab[k].x + (bc[k].x - ab[k].x)*i;
-		float y = ab[k].y + (bc[k].y - ab[k].y)*i;
-		Pt e(x, y);
-		pts.push_back(e);
-		k++;
-	}
-	return pts;
-}
 
 void ofApp::setup(){
 	parameters.setName("Controls");
+	parameters.add(boundaryconfigblank.set("Boundary config"));
 	parameters.add(CurvaTure.set("Curvature", 0.75, 0.51, 0.99f));
 	parameters.add(showCurveSeg.set("Place Curve Seg", true));
 	parameters.add(CurveSegP0.set("Crv Seg P-0", 4, 1, 10));
@@ -159,6 +168,7 @@ void ofApp::setup(){
 	//parameters.add(color0.set("Color P.region", 225, ofColor(0, 0), 255));
 	//parameters.add(color1.set("Color I.region", 225, ofColor(0, 0), 255));
 	parameters.add(controlpts.set("Control Pts", false));
+	parameters.add(rushconfigblank.set("Rush config"));
 	parameters.add(rush.set("Rush Config", false));
 	parameters.add(intgrid0.set("I. Grid-1", 1, 0, 10));
 	parameters.add(intgrid1.set("I. Grid-2 ", 2, 0, 10));
@@ -172,24 +182,30 @@ void ofApp::setup(){
 	parameters.add(fixint6.set("Fix-6 ICL. Config", false));
 
 	//parameters.add(intSpineCtrl.set("I. Spine Ctrl", 0.50, -0.95, 0.95));
+	parameters.add(generalconfigblank.set("General Config"));
 	parameters.add(spinecontrolpts.set("Spine Control Pts", false));
 	parameters.add(spinecurvature.set("Spine Curvature", 0.01, 0.005, 0.99f));
+	
 	parameters.add(Corridor1.set("I. Cor Depth", 10, 1, 50));
+	parameters.add(Corridor2.set("I. Cor2 Depth", 10, 1, 25));
 	parameters.add(SpineDisplacement.set("I. Spine Ctrl", 0, -200, 200));
 	parameters.add(spinedivpts.set("I. Grid-1", 15, 1, 50));
-	parameters.add(showintspinequads.set("Show I Grids", false));
+	parameters.add(showintspinequads.set("Show I Grids", true));
+
 	parameters.add(showintregion.set("Show I region", false));
+	parameters.add(subdivsystem.set("Subdiv I Grids", true));
+	parameters.add(intsubdiv.set("Number of subdiv", 1,0,3));
+	parameters.add(perisystem.set("Peripheral I Grids", false));
 
 	gui.setup(parameters);
-	gui.setBackgroundColor(ofColor(255,255,255));
+	gui.setBackgroundColor(ofColor(255,150,255));
 	L = PeripheralCellLength; W = PeripheralCellLength; Corridor = Corridor0;
 	ofSetBackgroundColor(255); ofSetColor(0); ofFill();
-	iniptvec.push_back(Pt(350, 100)); iniptvec.push_back(Pt(750, 250)); iniptvec.push_back(Pt(1150, 100));
-	iniptvec.push_back(Pt(1000, 450)); iniptvec.push_back(Pt(1150, 850)); iniptvec.push_back(Pt(750, 700));
-	iniptvec.push_back(Pt(350, 850)); iniptvec.push_back(Pt(500, 450)); iniptvec.push_back(Pt(350, 100));
+	iniptvec.push_back(Pt(550, 100)); iniptvec.push_back(Pt(950, 250)); iniptvec.push_back(Pt(1350, 100));
+	iniptvec.push_back(Pt(1200, 450)); iniptvec.push_back(Pt(1350, 850)); iniptvec.push_back(Pt(950, 700));
+	iniptvec.push_back(Pt(550, 850)); iniptvec.push_back(Pt(700, 450)); iniptvec.push_back(Pt(550, 100));
 	oriptvec = iniptvec;
 
-	
 }
 
 void ofApp::update(){
@@ -248,14 +264,7 @@ void ofApp::update(){
 		pD.setup(D.x + V.x * -SpineDisplacement * 2, D.y + V.y * -SpineDisplacement * 2); pD.locked = 0;
 		pE.setup(E.x + V.x * -SpineDisplacement, E.y + V.y * -SpineDisplacement); pE.locked = 0;
 	}
-	spineptvec.clear();
-	spineptvec.push_back(A);
-	for (float t = 0.f; t < 1.f; t += spinecurvature) {
-		ofSetColor(0, 0, 255); ofFill();
-		float x = (A.x*pow((1 - t), 5)) + (pB.x * 5 * pow((1 - t), 4)*t) + (pC.x * 10 * pow((1 - t), 3)*pow(t, 2)) + (pD.x * 10 * pow(1 - t, 2)*pow(t, 3)) + pE.x * 5 * (1 - t)*pow(t, 4) + F.x*pow(t, 5);
-		float y = (A.y*pow((1 - t), 5)) + (pB.y * 5 * pow((1 - t), 4)*t) + (pC.y * 10 * pow((1 - t), 3)*pow(t, 2)) + (pD.y * 10 * pow(1 - t, 2)*pow(t, 3)) + pE.y * 5 * (1 - t)*pow(t, 4) + F.y*pow(t, 5);
-		spineptvec.push_back(Pt(x, y));
-	}
+	gensmoothspinecurve();
 }
 
 void ofApp::draw() {
@@ -280,8 +289,6 @@ void ofApp::draw() {
 	for (int j = 1; j < revintptvec.size(); j++) { path3.lineTo(revintptvec[j].x, revintptvec[j].y); }
 	path3.draw();
 
-	
-	
 	//plot normal segments at points on straight segments
 	ofSetColor(ofColor(0,0,0,255)); ofSetLineWidth(sW);
 	for (int i = 1; i < straightSeg.size(); i++) {
@@ -383,7 +390,7 @@ void ofApp::draw() {
 	*/
 
 	//plot door swings
-	float dw = DoorDepth; ofSetColor(ofColor(0, 0, 0, 255));
+	float dw = DoorDepth; ofSetColor(ofColor(0, 0, 0, 255));	
 	for (int i = 0; i < trivec.size(); i++) {
 		Pt n = trivec[i].A; Pt e = trivec[i].B; Pt f = trivec[i].C;
 		Pt u((f.x - e.x) / e.di(f), (f.y - e.y) / e.di(f));
@@ -432,7 +439,7 @@ void ofApp::draw() {
 		}
 	}
 
-	ofFill(); ofSetColor(ofColor(0, 0, 0, 50)); ofDrawRectangle(15, 560, 350, 120);
+	ofFill(); ofSetColor(ofColor(0, 0, 0, 50)); ofDrawRectangle(15, 675, 350, 150);
 	ofSetColor(0, 0, 0);
 	string MSG = "Keyboard controls:";
 	MSG += "\n------------------";
@@ -441,31 +448,14 @@ void ofApp::draw() {
 	MSG += "\nPress 's' 'S' to save image";	
 	MSG += "\nPress 'e' 'E' to control spine";
 	MSG += "\nPress 'f' 'F' to stop control spine";
-	ofDrawBitmapString(MSG, 20, 580);
+	MSG += "\nPress 'g' 'G' to subdivide I quads";
+	MSG += "\nPress 'h' 'H' to gen peripheral I quads";
+	ofDrawBitmapString(MSG, 20, 700);
 	string title = "PhD student: Nirvik Saha (G.I.T.) \t\tadvisor: Dennis R Shelden (G.I.T.) \t\tadvisor: John R Haymaker (P + W)";
 	ofSetColor(0, 0, 0, 255); ofDrawBitmapString(title, 100, ofGetHeight() - 30);
 	gui.draw();
 
-	/*
-	ofNoFill();  ofSetColor(0, 0, 0, 255); ofSetLineWidth(3);
-	ofDrawBitmapStringHighlight("A0", A0.x, A0.y);
-	ofDrawBitmapStringHighlight("A1", A1.x, A1.y);
-	ofDrawBitmapStringHighlight("A2", A2.x, A2.y);
-	ofDrawBitmapStringHighlight("A3", A3.x, A3.y);
-	ofDrawBitmapStringHighlight("A4", A4.x, A4.y);
-	ofDrawBitmapStringHighlight("A5", A5.x, A5.y);
-	ofDrawBitmapStringHighlight("A6", A6.x, A6.y);
-	ofDrawBitmapStringHighlight("A7", A7.x, A7.y);
-	ofDrawBitmapStringHighlight("B0", B0.x, B0.y);
-	ofDrawBitmapStringHighlight("B1", B1.x, B1.y);
-	ofDrawBitmapStringHighlight("B2", B2.x, B2.y);
-	ofDrawBitmapStringHighlight("B3", B3.x, B3.y);
-	ofDrawBitmapStringHighlight("B4", B4.x, B4.y);
-	ofDrawBitmapStringHighlight("B5", B5.x, B5.y);
-	ofDrawBitmapStringHighlight("B6", B6.x, B6.y);
-	ofDrawBitmapStringHighlight("B7", B7.x, B7.y);
-	*/
-	
+
 	if (rush == 1) {
 		ofSetColor(0); ofSetLineWidth(1);
 		for (int i = 0; i < quads0.size(); i++) { quads0[i].display(); }
@@ -476,6 +466,26 @@ void ofApp::draw() {
 		for (int i = 0; i < quads5.size(); i++) { quads5[i].display(); }
 		for (int i = 0; i < quads6.size(); i++) { quads6[i].display(); }
 	}	
+
+
+	//show internal regions
+	if (showintregion == true) {
+		path4.clear();
+		path4.setStrokeColor(ofColor(0, 0, 0, 155)); path4.setFillColor(ofColor(255, 255, 255));
+		path4.setStrokeWidth(sW);
+		path4.moveTo(revintgridptvec[0].x, revintgridptvec[0].y);
+		for (int j = 1; j < revintgridptvec.size(); j++) {
+			path4.lineTo(revintgridptvec[j].x, revintgridptvec[j].y);
+		}
+		path4.draw();
+
+		//show the spine line
+		for (int i = 1; i < spineptvec.size(); i++) {
+			Pt a = spineptvec[i - 1]; Pt b = spineptvec[i];
+			ofSetColor(0, 0, 0, 50); ofSetLineWidth(1); ofDrawLine(a.x, a.y, b.x, b.y);
+			ofEllipse(a.x, a.y, 3, 3);
+		}
+	}
 
 	//only plotting of spine vector
 	if (spinecontrolpts == true) {
@@ -489,7 +499,6 @@ void ofApp::draw() {
 			ofEllipse(pB.x, pB.y, 25, 25);
 			ofSetLineWidth(1); ofSetColor(0, 0, 0, 150); ofDrawLine(pB.x, pB.y, B.x, B.y);
 		}
-
 
 		if (pC.locked == 1) {
 			ofFill(); ofSetColor(255, 0, 0, 50);
@@ -529,32 +538,13 @@ void ofApp::draw() {
 			ofDrawLine(a.x, a.y, b.x, b.y);
 		}
 	}
-	
+
 	vector<Pt> spinept;
-	for (int i = 0; i < spineptvec.size(); i++) {
-		if (i > 1 && i%spinedivpts == 0) { 
-			spinept.push_back(spineptvec[i]); }
+	for (int i = 1; i < spineptvec.size(); i+=spinedivpts) {
+		spinept.push_back(spineptvec[i]); 
 	} 
 	spinept.push_back(spineptvec[spineptvec.size()-1]);
 
-
-	if (showintregion == true) {
-		path4.clear();
-		path4.setStrokeColor(ofColor(0, 0, 0, 155)); path4.setFillColor(ofColor(255, 255, 255));
-		path4.setStrokeWidth(sW);
-		path4.moveTo(revintgridptvec[0].x, revintgridptvec[0].y);
-		for (int j = 1; j < revintgridptvec.size(); j++) {
-			path4.lineTo(revintgridptvec[j].x, revintgridptvec[j].y);
-		}
-		path4.draw();
-
-		//show the spine line
-		for (int i = 1; i < spineptvec.size(); i++) {
-			Pt a = spineptvec[i - 1]; Pt b = spineptvec[i];
-			ofSetColor(0, 0, 0, 50); ofSetLineWidth(1); ofDrawLine(a.x, a.y, b.x, b.y);
-		}
-	}
-	
 	//spine top 
 	vector<Seg> spineupvec; vector<Seg> spinednvec;
 	for (int i = 1; i < spinept.size(); i++) {
@@ -586,18 +576,150 @@ void ofApp::draw() {
 		}
 	}
 
-	if (showintspinequads == true) {
-		for (int i = 1; i < spineupvec.size(); i++) {
-			Pt A = spineupvec[i - 1].A; Pt B = spineupvec[i - 1].B;
-			Pt C = spineupvec[i].A; Pt D = spineupvec[i].B;
-			Quad q(A, B, D, C); q.display();
+	int SUBDIV = intsubdiv;
+	vector<Quad> intsubdivquadvec;
+
+	//setup ortho adjusted quads inside & across spine - above corridor
+	for (int i = 1; i < spineupvec.size(); i++) {
+		Pt A = spineupvec[i - 1].A; Pt B = spineupvec[i - 1].B;
+		Pt C = spineupvec[i].A; Pt D = spineupvec[i].B;
+		if (A.di(B) > C.di(D)) {
+			Pt u(A.x - C.x, A.y - C.y);
+			Pt E(D.x + u.x, D.y + u.y);
+			Pt B_ = intxPt2(D, E, A, B);
+			if (B_.x > 0 && C.di(D)>25) {
+				Quad q(A, B_, D, C);
+				intsubdivquadvec.push_back(q);
+			}				
 		}
-		for (int i = 1; i < spinednvec.size(); i++) {
-			Pt A = spinednvec[i - 1].A; Pt B = spinednvec[i - 1].B;
-			Pt C = spinednvec[i].A; Pt D = spinednvec[i].B;
-			Quad q(A, B, D, C); q.display();
+		else {
+			Pt u(C.x - A.x, C.y - A.y);
+			Pt E(B.x + u.x, B.y + u.y);
+			Pt D_ = intxPt2(B, E, C, D);
+			if (D_.x > 0 && A.di(B)>25) {
+				Quad q(A, B, D_, C);
+				intsubdivquadvec.push_back(q);
+			}				
 		}
-	}	
+	}
+
+	//setup ortho adjusted quads inside & across spine - below corridor
+	for (int i = 1; i < spinednvec.size(); i++) {
+		Pt A = spinednvec[i - 1].A; Pt B = spinednvec[i - 1].B;
+		Pt C = spinednvec[i].A; Pt D = spinednvec[i].B;
+		Quad q;
+		if (A.di(B) > C.di(D)) {
+			Pt u(A.x - C.x, A.y - C.y);
+			Pt E(D.x + u.x, D.y + u.y);
+			Pt B_ = intxPt2(D, E, A, B);
+			if (B_.x > 0 && C.di(D)>25) {
+				q.setupPreservePts(A, B_, D, C);
+				intsubdivquadvec.push_back(q);
+			}
+		}
+		else {
+			Pt u(C.x - A.x, C.y - A.y);
+			Pt E(B.x + u.x, B.y + u.y);
+			Pt D_ = intxPt2(B, E, C, D);
+			if (D_.x > 0 && A.di(B)>25) {
+				q.setupPreservePts(A, B, D_, C);
+				intsubdivquadvec.push_back(q);
+			}				
+		}
+	}
+
+	if (showintspinequads == true && perisystem==false) {
+		for (int i = 0; i < intsubdivquadvec.size(); i++) {
+			intsubdivquadvec[i].display2();
+		}
+	}
+
+	//peripheral system reg the collected quads
+	vector<Tri>trivec2;
+	if (perisystem == true) {
+		intperipgeneratequads.clear();
+		for (int i = 0; i < intsubdivquadvec.size(); i++) {
+			Quad q = intsubdivquadvec[i];
+			Pt a = q.pts[0]; 
+			Pt b = q.pts[1]; 
+			Pt c = q.pts[2]; 
+			Pt d = q.pts[3];
+			Pt e((a.x + d.x) / 2, (a.y + d.y) / 2);
+			Pt f((b.x + c.x) / 2, (b.y + c.y) / 2);
+			float w = Corridor2;
+			Pt a_(a.x + (e.x - a.x)*w*0.5 / e.di(a), a.y + (e.y - a.y)*w*0.5 / e.di(a));
+			Pt b_(b.x + (f.x - b.x)*w*0.5 / f.di(b), b.y + (f.y - b.y)*w*0.5 / f.di(b));
+			Pt c_(c.x + (f.x - c.x)*w*0.5 / f.di(c), c.y + (f.y - c.y)*w*0.5 / f.di(c));
+			Pt d_(d.x + (e.x - d.x)*w*0.5 / e.di(d), d.y + (e.y - d.y)*w*0.5 / e.di(d));
+
+			Pt u((f.x - e.x)/e.di(f), (f.y - e.y) / e.di(f));
+			float j = 0.f; float L = 50.f;
+			while (j < a.di(b)) {
+				Pt p(a_.x + u.x*j, a_.y + u.y*j);
+				Pt q(e.x + u.x*j, e.y + u.y*j);
+				Pt r(a_.x + u.x*(j + L), a_.y + u.y*(j + L));
+				Pt s(e.x + u.x*(j + L), e.y + u.y*(j + L));
+
+				Pt p_(d_.x + u.x*j, d_.y + u.y*j);
+				Pt q_(e.x + u.x*j, e.y + u.y*j);
+				Pt r_(d_.x + u.x*(j + L), d_.y + u.y*(j + L));
+				Pt s_(e.x + u.x*(j + L), e.y + u.y*(j + L));
+
+				if (a_.di(q) < e.di(f)  && d_.di(r_) < e.di(f)) {
+					trivec2.push_back(Tri(p, r, s));
+					trivec2.push_back(Tri(s_,r_,p_));
+					Quad q2(p, r, s, q); intperipgeneratequads.push_back(q2);
+					Quad q3(p_, r_, s_, q_); intperipgeneratequads.push_back(q3);
+				}
+				j += L;
+			}
+		}
+		for (int i = 0; i < intperipgeneratequads.size(); i++) {
+			intperipgeneratequads[i].display2();
+		}
+
+		//door swing
+		float dw = DoorDepth; ofSetColor(ofColor(0, 0, 0, 255));
+		for (int i = 0; i < trivec2.size(); i++) {
+			Pt n = trivec2[i].A; Pt e = trivec2[i].B; Pt f = trivec2[i].C;
+			Pt u((f.x - e.x) / e.di(f), (f.y - e.y) / e.di(f));
+			Pt v((n.x - e.x) / e.di(n), (n.y - e.y) / e.di(n));
+			Pt n_(e.x + (n.x - e.x)*dw / e.di(n), e.y + (n.y - e.y)*dw / e.di(n));
+			Pt f_(e.x + (f.x - e.x)*dw / e.di(f), e.y + (f.y - e.y)*dw / e.di(f));
+			ofSetLineWidth(1); ofSetColor(255,0,0); 
+			ofLine(n_.x, n_.y, f_.x, f_.y);
+			ofEllipse(e.x, e.y, 5, 5);
+		}
+	
+	}//end of peripheral systems
+
+	//subdivide the collected quads - interior subdiv across spine
+	if (generatesubdivsystem == 1 && subdivsystem == true) {
+		for (int i = 0; i < intsubdivquadvec.size(); i++) {
+			subdivQuadVec.clear(); subdiv(intsubdivquadvec[i], 0, SUBDIV);
+			vector<Quad> quadvec = subdivQuadVec;
+			subdiv(intsubdivquadvec[i], 0, SUBDIV);
+			for (int j = 0; j < quadvec.size(); j++) {
+				intsubdivgeneratequads.push_back(quadvec[j]);
+			}				
+		}
+	}
+
+	//display the subdivided quads across spine
+	if (subdivsystem == true) {
+		for (int i = 0; i < intsubdivgeneratequads.size(); i++) {
+			intsubdivgeneratequads[i].display();
+		}
+	}else{ 
+		intsubdivgeneratequads.clear(); intsubdivquadvec.clear(); 
+	}
+
+	generatesubdivsystem = 0;	
+
+	if (showintspinequads == false) {
+		spineupvec.clear(); spinednvec.clear(); intsubdivgeneratequads.clear();
+	}
+
 }
 
 void ofApp::keyPressed(int key){
@@ -620,6 +742,10 @@ void ofApp::keyPressed(int key){
 	if (key == 'f' || key == 'F') {
 		controlspine = 0;
 		SpineDisplacement = 0; SpineDisplacement.set(0);
+	}
+	if (key == 'g' || key == 'G') { 
+		intsubdivgeneratequads.clear();
+		generatesubdivsystem = 1; 		
 	}
 }
 
@@ -800,38 +926,6 @@ vector<Quad> ofApp::initSubdiv(Pt a, Pt b, Pt c, Pt d, int t, vector<Quad> quad)
 	return quad;
 }
 
-/*	recursive function for subdividion process	*/
-void ofApp::subdiv(Quad Q, int t, int w) {
-	Pt a, b, c, d;
-	a.setup(Q.pts[0].x, Q.pts[0].y);
-	b.setup(Q.pts[1].x, Q.pts[1].y);
-	c.setup(Q.pts[2].x, Q.pts[2].y);
-	d.setup(Q.pts[3].x, Q.pts[3].y);
-	int g = (int)ofRandom(0, 2);
-	Quad R, S; Pt m, n;
-	if (g == 0) {
-		m.setup((a.x + b.x) / 2, (a.y + b.y) / 2);
-		n.setup((c.x + d.x) / 2, (c.y + d.y) / 2);
-		R.setupPreservePts(a, m, n, d);
-		S.setupPreservePts(m, b, c, n);
-	}
-	else {
-		m.setup((b.x + c.x) / 2, (b.y + c.y) / 2);
-		n.setup((a.x + d.x) / 2, (a.y + d.y) / 2);
-		R.setupPreservePts(a, b, m, n);
-		S.setupPreservePts(n, m, c, d);
-	}
-	if (t < w) {
-		t++;
-		subdiv(R, t, w);
-		subdiv(S, t, w);
-	}
-	else {
-		subdivQuadVec.push_back(R);
-		subdivQuadVec.push_back(S);
-	}
-}
-
 void ofApp::intRushConfig() {
 	vector<Pt>spineptvec;
 	spineptvec.push_back(A0); spineptvec.push_back(A1);
@@ -909,3 +1003,38 @@ void ofApp::intRushConfig() {
 	//rush = 0;
 	//rush.set(false);
 }
+
+/*	recursive function for subdividion process	*/
+void ofApp::subdiv(Quad Q, int t, int w) {
+	Pt a, b, c, d;
+	a.setup(Q.pts[0].x, Q.pts[0].y);
+	b.setup(Q.pts[1].x, Q.pts[1].y);
+	c.setup(Q.pts[2].x, Q.pts[2].y);
+	d.setup(Q.pts[3].x, Q.pts[3].y);
+	int g = (int)ofRandom(0, 2);
+	Quad R, S; Pt m, n;
+	if (g == 0) {
+		m.setup((a.x + b.x) / 2, (a.y + b.y) / 2);
+		n.setup((c.x + d.x) / 2, (c.y + d.y) / 2);
+		R.setupPreservePts(a, m, n, d);
+		S.setupPreservePts(m, b, c, n);
+	}
+	else {
+		m.setup((b.x + c.x) / 2, (b.y + c.y) / 2);
+		n.setup((a.x + d.x) / 2, (a.y + d.y) / 2);
+		R.setupPreservePts(a, b, m, n);
+		S.setupPreservePts(n, m, c, d);
+	}
+	if (t < w) {
+		t++;
+		subdiv(R, t, w);
+		subdiv(S, t, w);
+	}
+	else {
+		subdivQuadVec.push_back(R);
+		subdivQuadVec.push_back(S);
+	}
+}
+
+
+

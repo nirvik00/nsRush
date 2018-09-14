@@ -23,8 +23,20 @@ public:
 	}
 	void display() {
 		ofPath path;
-		path.setFillColor(ofColor(0, 150, 155, 50));
-		path.setStrokeWidth(2);
+		path.setFillColor(ofColor(0, 150, 155, 20));
+		path.setStrokeWidth(1);
+		path.setStrokeColor(ofColor(0, 0, 0, 155));
+		path.moveTo(A.x, A.y);
+		path.lineTo(B.x, B.y);
+		path.lineTo(C.x, C.y);
+		path.lineTo(D.x, D.y);
+		path.close();
+		path.draw();
+	}
+	void display2() {
+		ofPath path;
+		path.setStrokeWidth(1);
+		path.setFillColor(ofColor(0, 150, 155, 25));
 		path.setStrokeColor(ofColor(0, 0, 0, 255));
 		path.moveTo(A.x, A.y);
 		path.lineTo(B.x, B.y);
@@ -98,8 +110,11 @@ class ofApp : public ofBaseApp{
 		Pt proj(Pt, Pt, Pt);
 		vector<Quad> initSubdiv(Pt, Pt, Pt, Pt, int, vector<Quad>);
 		void subdiv(Quad, int, int);
+		void subdiv(Pt, Pt, Pt, Pt, int, int);
 		void intRushConfig();
 		vector<Pt> gensmoothspinecurve();
+		vector<Pt> ofApp::gensmoothboundary(Pt, Pt, Pt, Pt);
+		vector<Quad> ofApp::peripheralsystemfunction(Pt, Pt, Pt, Pt);
 
 		/* NS VARIABLES */
 		vector<Pt> oriptvec;
@@ -120,7 +135,10 @@ class ofApp : public ofBaseApp{
 		vector<Pt>diagpts; //used
 
 		int controlspine = 0;
+		int generatesubdivsystem = 0;
 		vector<Pt> spineptvec;
+		vector<Quad> intsubdivgeneratequads;
+		vector<Quad> intperipgeneratequads;
 		
 
 		float L, W, Corridor, Curvature;
@@ -140,7 +158,8 @@ class ofApp : public ofBaseApp{
 		/*	gui parameters and objects	*/
 		//int rush = 0; 
 		Pt globaldiaA; Pt globaldiaB;
-
+		
+		ofParameter<string>boundaryconfigblank;
 		ofParameterGroup parameters;
 		ofParameter<float>CurvaTure;
 		ofParameter<int>CurveSegP0;
@@ -148,19 +167,14 @@ class ofApp : public ofBaseApp{
 		ofParameter<float>PeripheralCellDepth;
 		ofParameter<int>PeripheralCellLength;
 		ofParameter<int>Corridor0;
-
-		
-		
 		ofParameter<float>DoorDepth;
-		ofParameter<ofColor> color0;
-		ofParameter<ofColor> color1;
-		
 		ofParameter<bool>controlpts;
+
+		ofParameter<string>rushconfigblank;
 		ofParameter<bool>rush;
 		ofParameter<int>intgrid0;
 		ofParameter<int>intgrid1;
-		ofParameter<int>intgrid2;
-		
+		ofParameter<int>intgrid2;		
 		ofParameter<bool>fixint0;
 		ofParameter<bool>fixint1;
 		ofParameter<bool>fixint2;
@@ -169,14 +183,19 @@ class ofApp : public ofBaseApp{
 		ofParameter<bool>fixint5;
 		ofParameter<bool>fixint6;
 
+		ofParameter<string>generalconfigblank;
 		ofParameter<bool>spinecontrolpts;
 		ofParameter<int>Corridor1;
-		ofParameter<float>intSpineCtrl;
-		ofParameter<float>SpineDisplacement;
-		ofParameter<float>spinecurvature;		
-		ofParameter<int>spinedivpts;
+		ofParameter<int>Corridor2;
+		ofParameter<int>intsubdiv; //number of internal subdivisions
+		ofParameter<float>intSpineCtrl; // curve by matrix of spine
+		ofParameter<float>SpineDisplacement; //displacement of points from diagonal
+		ofParameter<float>spinecurvature; // internal curvature of grids		
+		ofParameter<int>spinedivpts; //number of points on spine
 		ofParameter<bool>showintspinequads;
 		ofParameter<bool>showintregion;
+		ofParameter<bool>subdivsystem;
+		ofParameter<bool>perisystem;
 		ofxPanel gui;
 
 		// camera
